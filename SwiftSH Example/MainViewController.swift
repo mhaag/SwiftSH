@@ -27,7 +27,7 @@ import UIKit
 
 class MainViewController: UITableViewController {
     
-    let data: [(name: String, segue: String)] = [("Shell", "OpenShell"), ("Command", "ExecCommand")]
+    let data: [(name: String, segue: String)] = [("Shell", "OpenShell"), ("Command", "ExecCommand"), ("SCP", "SCPSegue")]
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         guard let loginViewController = segue.destination as? LoginViewController else {

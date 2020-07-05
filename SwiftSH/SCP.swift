@@ -22,9 +22,42 @@
 // SOFTWARE.
 //
 
-@available(*, unavailable)
+//@available(*, unavailable)
 public class SCPSession: SSHChannel {
 
+    // MARK: - Internal variables
+
+    internal var socketSource: DispatchSourceRead?
+    internal var timeoutSource: DispatchSourceTimer?
+    
+    // MARK: - Initialization
+    
+    public override init(sshLibrary: SSHLibrary.Type = Libssh2.self, host: String, port: UInt16 = 22, environment: [Environment] = [], terminal: Terminal? = nil) throws {
+        try super.init(sshLibrary: sshLibrary, host: host, port: port, environment: environment, terminal: terminal)
+    }
+
+    deinit {
+        self.cancelSources()
+    }
+    
+   
+    public override func close() {
+        self.cancelSources()
+
+        self.queue.async {
+            super.close()
+        }
+    }
+    
+    private func cancelSources() {
+        if let timeoutSource = self.timeoutSource, !timeoutSource.isCancelled {
+            timeoutSource.cancel()
+        }
+        
+        if let socketSource = self.socketSource, !socketSource.isCancelled {
+            socketSource.cancel()
+        }
+    }
     // MARK: - Download
     
     public func download(_ from: String, to path: String) -> Self {
