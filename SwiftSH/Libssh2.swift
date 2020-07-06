@@ -377,7 +377,7 @@ extension Libssh2 {
 extension Libssh2 {
 
     fileprivate class Channel: SSHLibraryChannel {
-
+        
         var session: OpaquePointer
         var channel: OpaquePointer?
         var bufferSize: Int = 32_768
@@ -410,11 +410,12 @@ extension Libssh2 {
             }
         }
         
-        func openSCPChannel(remotePath path: String) throws {
+        func openSCPChannel(remotePath path: String) throws -> Int {
             var fileInfo = libssh2_struct_stat()
             self.channel = try libssh2_function(self.session) { session in
                 libssh2_scp_recv2(session, path, &fileInfo)
             }
+            return Int(fileInfo.st_size)
         }
 
         func setEnvironment(_ environment: Environment) throws {

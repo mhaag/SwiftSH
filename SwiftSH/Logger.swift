@@ -25,10 +25,10 @@
 // MARK: - Logger protocol
 
 public protocol Logger {
-
+    
     var enabled: Bool { get set }
     var level: LogLevel { get set }
-
+    
     func debug(_ message: @autoclosure () -> String)
     func info(_ message: @autoclosure () -> String)
     func warn(_ message: @autoclosure () -> String)
@@ -39,15 +39,15 @@ public protocol Logger {
 // MARK: - LoggerLevel enum
 
 public enum LogLevel: CustomStringConvertible, Comparable {
-
+    
     case debug, info, warning, error
-
+    
     public var description: String {
         switch self {
-            case .debug: return "DEBUG"
-            case .info: return "INFO"
-            case .warning: return "WARN"
-            case .error: return "ERROR"
+        case .debug: return "DEBUG"
+        case .info: return "INFO"
+        case .warning: return "WARN"
+        case .error: return "ERROR"
         }
     }
     
@@ -59,5 +59,5 @@ public enum LogLevel: CustomStringConvertible, Comparable {
         default: return false
         }
     }
-
+    
 }

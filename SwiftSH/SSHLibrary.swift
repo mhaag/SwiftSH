@@ -70,6 +70,7 @@ public protocol SSHLibraryChannel {
     var receivedEOF: Bool { get }
     
     func openChannel() throws
+    func openSCPChannel(remotePath path: String) throws -> Int
     func closeChannel() throws
     func setEnvironment(_ environment: Environment) throws
     func requestPseudoTerminal(_ terminal: Terminal) throws

@@ -24,9 +24,9 @@
 
 //@available(*, unavailable)
 public class SCPSession: SSHChannel {
-
+    
     // MARK: - Internal variables
-
+    
     internal var socketSource: DispatchSourceRead?
     internal var timeoutSource: DispatchSourceTimer?
     
@@ -35,15 +35,15 @@ public class SCPSession: SSHChannel {
     public override init(sshLibrary: SSHLibrary.Type = Libssh2.self, host: String, port: UInt16 = 22, environment: [Environment] = [], terminal: Terminal? = nil) throws {
         try super.init(sshLibrary: sshLibrary, host: host, port: port, environment: environment, terminal: terminal)
     }
-
+    
     deinit {
         self.cancelSources()
     }
     
-   
+    
     public override func close() {
         self.cancelSources()
-
+        
         self.queue.async {
             super.close()
         }
@@ -59,13 +59,123 @@ public class SCPSession: SSHChannel {
         }
     }
     // MARK: - Download
+    private var response: Data?
+    private var error: Data?
     
+    public func download(_ from: String, completion: ((Data?, Error?) -> Void)?) {
+        self.queue.async(completion: { (error: Error?) in
+            if let error = error {
+                self.close()
+                
+                if let completion = completion {
+                    completion(nil, error)
+                }
+            }
+        }, block: {
+            self.response = nil
+            self.error = nil
+            
+            // open SCP Channel
+            let fileSize = try self.openScp(remotePath: from)
+            self.log.debug("Filesize: \(fileSize)")
+            
+            // Set non-blocking mode
+            self.session.blocking = false
+            
+            // read the data
+            // Read the result
+            var socketClosed = true
+            do {
+                let data = try self.channel.read()
+                if self.response == nil {
+                    self.response = Data()
+                }
+                self.response!.append(data)
+                
+                socketClosed = false
+            } catch let error {
+                self.log.error("[STD] \(error)")
+            }
+            
+            // Read the error
+            do {
+                let data = try self.channel.readError()
+                if data.count > 0 {
+                    if self.error == nil {
+                        self.error = Data()
+                    }
+                    
+                    self.error!.append(data)
+                }
+                
+                socketClosed = false
+            } catch let error {
+                self.log.error("[ERR] \(error)")
+            }
+            
+            // Check if we can return the response
+            if self.channel.receivedEOF || self.channel.exitStatus() != nil || socketClosed {
+                defer {
+                    self.cancelSources()
+                }
+                
+                if let completion = completion {
+                    let result = self.response
+                    var error: Error?
+                    if let message = self.error {
+                        error = SSHError.Command.execError(String(data: message, encoding: .utf8), message)
+                    }
+                    
+                    self.queue.callbackQueue.async {
+                        completion(result, error)
+                    }
+                }
+            }
+            
+            // Create the timeout handler
+            self.timeoutSource = DispatchSource.makeTimerSource(queue: self.queue.queue)
+            guard let timeoutSource = self.timeoutSource else {
+                throw SSHError.allocation
+            }
+            
+            timeoutSource.setEventHandler { [weak self] in
+                guard let self = self else {
+                    return
+                }
+                
+                self.cancelSources()
+                
+                if let completion = completion {
+                    let result = self.response
+                    
+                    self.queue.callbackQueue.async {
+                        completion(result, SSHError.timeout)
+                    }
+                }
+            }
+            timeoutSource.schedule(deadline: .now() + self.timeout, repeating: self.timeout, leeway: .seconds(10))
+            
+            // Set blocking mode
+            self.session.blocking = true
+                        
+            // Set non-blocking mode
+            self.session.blocking = false
+            
+            // Start listening for new data
+            timeoutSource.resume()
+        })
+        
+    }
+    
+    
+    
+    #if RELEASE_VERSION
     public func download(_ from: String, to path: String) -> Self {
         self.download(from, to: path, completion: nil)
-
+        
         return self
     }
-
+    
     public func download(_ from: String, to path: String, completion: SSHCompletionBlock?) {
         if let stream = OutputStream(toFileAtPath: path, append: false) {
             self.download(from, to: stream, completion: completion)
@@ -75,23 +185,34 @@ public class SCPSession: SSHChannel {
             }
         }
     }
-
+    
     
     public func download(_ from: String, to stream: OutputStream) -> Self {
         self.download(from, to: stream, completion: nil)
-
+        
         return self
     }
-
+    
     public func download(_ from: String, to stream: OutputStream, completion: SSHCompletionBlock?) {
         self.queue.async(completion: completion) {
+            
             stream.open()
+            // open the channel in scp mode
+            let count = try self.openScp(remotePath: from)
+            print("-->  Filesize: \(count)")
             do {
+                print("Receive the data here...")
+                try self.read()
+                print("Got data..")
+                stream.close()
+            } catch {
+                print("Exception")
                 stream.close()
             }
         }
     }
-
+    
+    
     public func download(_ from: String, completion: @escaping ((Data?, Error?) -> Void)) {
         let stream = OutputStream.toMemory()
         self.download(from, to: stream) { error in
@@ -102,7 +223,10 @@ public class SCPSession: SSHChannel {
             }
         }
     }
-
+    
     // MARK: - Upload
+    
 
+    #endif
+    
 }

@@ -62,11 +62,17 @@ class SCPViewController: UIViewController, SSHViewController {
     
     @IBAction func readJsonFile(_ sender: Any) {
         print("Read File started...")
+        let fileString = "config.json"
         self.scp
-            .connect().authenticate(self.authenticationChallenge)
-        self.scp.download("config.json", to: self.scpOutput)
-        self.scpOutputTextView.text = self.scpOutput
-        
+            .connect()
+            .authenticate(self.authenticationChallenge)
+            .download(fileString) { [unowned self] (result: Data?, error) in
+                if let result = result {
+                    self.scpOutputTextView.text = String(decoding: result, as: UTF8.self)
+                } else {
+                    self.scpOutputTextView.text = "ERROR: \(String(describing: error))"
+                }
+        }
     }
 
     @IBAction func disconnect(_ sender: Any) {

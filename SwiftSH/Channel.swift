@@ -64,7 +64,7 @@ open class SSHChannel: SSHSession {
         // Set blocking mode
         self.session.blocking = true
         
-        // Opening the channel
+            // Opening the channel
         try self.channel.openChannel()
         
         do {
@@ -83,6 +83,46 @@ open class SSHChannel: SSHSession {
             self.close()
             throw error
         }
+    }
+    
+    internal func openScp(remotePath path: String) throws -> Int {
+        assert(self.queue.current)
+        
+        // Check if we are authenticated
+        guard self.authenticated else {
+            throw SSHError.authenticationFailed
+        }
+        
+        // Check if the channel is already open
+        guard !self.channel.opened else {
+            throw SSHError.Channel.alreadyOpen
+        }
+        
+        self.log.debug("Opening the SCP channel...")
+        
+        // Set blocking mode
+        self.session.blocking = true
+        
+        let count = try self.channel.openSCPChannel(remotePath:path)
+        
+        do {
+            // Set the environment's variables
+            self.log.debug("Environment: \(self.environment)")
+            for variable in self.environment {
+                try self.channel.setEnvironment(variable)
+            }
+            
+            // Request the pseudo terminal
+            if let terminal = self.terminal {
+                self.log.debug("\(terminal) pseudo terminal requested")
+                try self.channel.requestPseudoTerminal(terminal)
+            }
+        } catch {
+            self.close()
+            throw error
+        }
+        
+        return count
     }
 
     internal func close() {
