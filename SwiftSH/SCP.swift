@@ -78,58 +78,78 @@ public class SCPSession: SSHChannel {
             // open SCP Channel
             let fileSize = try self.openScp(remotePath: from)
             self.log.debug("Filesize: \(fileSize)")
-            
-            // Set non-blocking mode
-            self.session.blocking = false
-            
-            // read the data
-            // Read the result
-            var socketClosed = true
-            do {
-                let data = try self.channel.read()
-                if self.response == nil {
-                    self.response = Data()
-                }
-                self.response!.append(data)
-                
-                socketClosed = false
-            } catch let error {
-                self.log.error("[STD] \(error)")
+            // Read the received data
+            self.socketSource = DispatchSource.makeReadSource(fileDescriptor: CFSocketGetNative(self.socket), queue: self.queue.queue)
+            guard let socketSource = self.socketSource else {
+                throw SSHError.allocation
             }
             
-            // Read the error
-            do {
-                let data = try self.channel.readError()
-                if data.count > 0 {
-                    if self.error == nil {
-                        self.error = Data()
-                    }
-                    
-                    self.error!.append(data)
+            socketSource.setEventHandler { [weak self] in
+                guard let self = self, let timeoutSource = self.timeoutSource else {
+                    return
                 }
                 
-                socketClosed = false
-            } catch let error {
-                self.log.error("[ERR] \(error)")
-            }
-            
-            // Check if we can return the response
-            if self.channel.receivedEOF || self.channel.exitStatus() != nil || socketClosed {
+                // Suspend the timer to prevent calling completion two times
+                timeoutSource.suspend()
                 defer {
-                    self.cancelSources()
+                    timeoutSource.resume()
                 }
                 
-                if let completion = completion {
-                    let result = self.response
-                    var error: Error?
-                    if let message = self.error {
-                        error = SSHError.Command.execError(String(data: message, encoding: .utf8), message)
+                // Set non-blocking mode
+                self.session.blocking = false
+                
+                // read the data
+                // Read the result
+                var socketClosed = true
+                do {
+                    let data = try self.channel.read()
+                    if self.response == nil {
+                        self.response = Data()
+                    }
+                    self.response!.append(data)
+                    
+                    socketClosed = false
+                } catch let error {
+                    self.log.error("[STD] \(error)")
+                }
+                
+                // Read the error
+                do {
+                    let data = try self.channel.readError()
+                    if data.count > 0 {
+                        if self.error == nil {
+                            self.error = Data()
+                        }
+                        
+                        self.error!.append(data)
                     }
                     
-                    self.queue.callbackQueue.async {
-                        completion(result, error)
+                    socketClosed = false
+                } catch let error {
+                    self.log.error("[ERR] \(error)")
+                }
+                
+                // Check if we can return the response
+                if self.channel.receivedEOF || self.channel.exitStatus() != nil || socketClosed {
+                    defer {
+                        self.cancelSources()
+                    }
+                    
+                    if let completion = completion {
+                        let result = self.response
+                        var error: Error?
+                        if let message = self.error {
+                            error = SSHError.Command.execError(String(data: message, encoding: .utf8), message)
+                        }
+                        
+                        self.queue.callbackQueue.async {
+                            completion(result, error)
+                        }
                     }
                 }
+            }
+            socketSource.setCancelHandler { [weak self] in
+                self?.close()
             }
             
             // Create the timeout handler
@@ -157,12 +177,13 @@ public class SCPSession: SSHChannel {
             
             // Set blocking mode
             self.session.blocking = true
-                        
+            
             // Set non-blocking mode
             self.session.blocking = false
             
             // Start listening for new data
             timeoutSource.resume()
+            socketSource.resume()
         })
         
     }
@@ -226,7 +247,7 @@ public class SCPSession: SSHChannel {
     
     // MARK: - Upload
     
-
+    
     #endif
     
 }
