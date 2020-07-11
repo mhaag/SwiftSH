@@ -61,7 +61,6 @@ class SCPViewController: UIViewController, SSHViewController {
     }
     
     @IBAction func readJsonFile(_ sender: Any) {
-        print("Read File started...")
         let fileString = "config.json"
         self.scp
             .connect()
