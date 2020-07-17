@@ -78,6 +78,7 @@ public class SCPSession: SSHChannel {
             // open SCP Channel
             let fileSize = try self.openScp(remotePath: from)
             self.log.debug("Filesize: \(fileSize)")
+            
             // Read the received data
             self.socketSource = DispatchSource.makeReadSource(fileDescriptor: CFSocketGetNative(self.socket), queue: self.queue.queue)
             guard let socketSource = self.socketSource else {
@@ -184,6 +185,117 @@ public class SCPSession: SSHChannel {
             // Start listening for new data
             timeoutSource.resume()
             socketSource.resume()
+        })
+        
+    }
+    
+    
+    public func upload(_ to: String, data:Data, completion: ((Error?) -> Void)?) {
+        self.queue.async(completion: { (error: Error?) in
+            if let error = error {
+                self.close()
+                
+                if let completion = completion {
+                    completion(error)
+                }
+            }
+        }, block: {
+            self.response = nil
+            self.error = nil
+            
+            // open SCP Channel
+            do {
+                try self.openScpSend(remotePath: to, size:data.count)
+            } catch let error {
+                self.log.error("Error OpenScpSend \(error)")
+            }
+            
+            // Read the received data
+            //            self.socketSource = DispatchSource.makeReadSource(fileDescriptor: CFSocketGetNative(self.socket), queue: self.queue.queue)
+            //            guard let socketSource = self.socketSource else {
+            //                throw SSHError.allocation
+            //            }
+            
+            //            socketSource.setEventHandler { [weak self] in
+            //                guard let self = self, let timeoutSource = self.timeoutSource else {
+            //                    return
+            //                }
+            
+            // Suspend the timer to prevent calling completion two times
+            //                timeoutSource.suspend()
+            //                defer {
+            //                    timeoutSource.resume()
+            //                }
+            
+            // Set non-blocking mode
+            self.session.blocking = true
+            
+            // write the data
+            var socketClosed = true
+            
+            let (error, sendBytes) = self.channel.write(data)
+            print("send bytes: \(sendBytes)")
+            if let error = error {
+                print("\(error)")
+            }
+            socketClosed = false
+            
+            
+            
+            // Check if we can return the response
+            if self.channel.receivedEOF || self.channel.exitStatus() != nil || socketClosed {
+                defer {
+                    self.cancelSources()
+                }
+                
+                if let completion = completion {
+                    //                        let result = self.response
+                    var error: Error?
+                    if let message = self.error {
+                        error = SSHError.Command.execError(String(data: message, encoding: .utf8), message)
+                    }
+                    
+                    self.queue.callbackQueue.async {
+                        completion(error)
+                    }
+                }
+            }
+            //            }
+            //            socketSource.setCancelHandler { [weak self] in
+            //                self?.close()
+            //            }
+            
+            // Create the timeout handler
+            self.timeoutSource = DispatchSource.makeTimerSource(queue: self.queue.queue)
+            guard let timeoutSource = self.timeoutSource else {
+                throw SSHError.allocation
+            }
+            
+            timeoutSource.setEventHandler { [weak self] in
+                guard let self = self else {
+                    return
+                }
+                
+                self.cancelSources()
+                
+                if let completion = completion {
+                    //                    let result = self.response
+                    self.queue.callbackQueue.async {
+                        completion(SSHError.timeout)
+                    }
+                }
+            }
+            timeoutSource.schedule(deadline: .now() + self.timeout, repeating: self.timeout, leeway: .seconds(10))
+            
+            // Set blocking mode
+            self.session.blocking = true
+            
+            // Set non-blocking mode
+            self.session.blocking = false
+            
+            // Start listening for new data
+            timeoutSource.resume()
+            //            socketSource.resume()
         })
         
     }

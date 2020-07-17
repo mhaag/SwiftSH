@@ -71,6 +71,7 @@ public protocol SSHLibraryChannel {
     
     func openChannel() throws
     func openSCPChannel(remotePath path: String) throws -> Int
+    func openSCPChannelSend(remotePath path: String, size:Int) throws
     func closeChannel() throws
     func setEnvironment(_ environment: Environment) throws
     func requestPseudoTerminal(_ terminal: Terminal) throws

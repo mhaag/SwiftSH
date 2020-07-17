@@ -417,6 +417,15 @@ extension Libssh2 {
             }
             return Int(fileInfo.st_size)
         }
+        
+        func openSCPChannelSend(remotePath path: String, size:Int) throws {
+            let fileInfo = libssh2_struct_stat()
+            let date = NSDate()
+            let time = time_t(date.timeIntervalSince1970)
+            self.channel = try libssh2_function(self.session) { session in
+                libssh2_scp_send64(session, path, Int32(fileInfo.st_mode & 0777), Int64(size), time,time)
+            }
+        }
 
         func setEnvironment(_ environment: Environment) throws {
             guard let channel = self.channel else {

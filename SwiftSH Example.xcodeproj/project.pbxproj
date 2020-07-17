@@ -18,6 +18,7 @@
 		2844E0FD24A4E82D00489FA6 /* SwiftSH.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DF4E9292066CC0C00D34C7F /* SwiftSH.framework */; };
 		2844E0FE24A4E82D00489FA6 /* SwiftSH.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 7DF4E9292066CC0C00D34C7F /* SwiftSH.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		2844E10124A4E90300489FA6 /* SCPViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2844E10024A4E90300489FA6 /* SCPViewController.swift */; };
+		2868E80424BC416300CB8A88 /* config.json in Resources */ = {isa = PBXBuildFile; fileRef = 2868E80324BC416300CB8A88 /* config.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -46,6 +47,7 @@
 		180BD22E1B4C9268000DB241 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		180BD2301B4C9268000DB241 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		2844E10024A4E90300489FA6 /* SCPViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SCPViewController.swift; sourceTree = "<group>"; };
+		2868E80324BC416300CB8A88 /* config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = config.json; sourceTree = "<group>"; };
 		7DF4E9292066CC0C00D34C7F /* SwiftSH.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = SwiftSH.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -91,6 +93,7 @@
 				180BD22D1B4C9268000DB241 /* LaunchScreen.storyboard */,
 				180BD2301B4C9268000DB241 /* Info.plist */,
 				2844E10024A4E90300489FA6 /* SCPViewController.swift */,
+				2868E80324BC416300CB8A88 /* config.json */,
 			);
 			path = "SwiftSH Example";
 			sourceTree = "<group>";
@@ -165,6 +168,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				180BD22F1B4C9268000DB241 /* LaunchScreen.storyboard in Resources */,
+				2868E80424BC416300CB8A88 /* config.json in Resources */,
 				180BD22C1B4C9268000DB241 /* Assets.xcassets in Resources */,
 				180BD22A1B4C9268000DB241 /* Main.storyboard in Resources */,
 			);
@@ -255,7 +259,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.5;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -308,7 +312,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.5;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";

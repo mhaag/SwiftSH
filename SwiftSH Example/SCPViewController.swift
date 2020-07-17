@@ -73,27 +73,51 @@ class SCPViewController: UIViewController, SSHViewController {
                 }
         }
     }
-
-    @IBAction func disconnect(_ sender: Any) {
-        self.scp?.disconnect { [unowned self] in
-            self.navigationController?.popViewController(animated: true)
-        }
-    }
     
-    func askForPassword(_ challenge: String) {
-        let alertController = UIAlertController(title: "Authetication challenge", message: challenge, preferredStyle: .alert)
-        alertController.addTextField { [unowned self] (textField) in
-            textField.placeholder = challenge
-            textField.isSecureTextEntry = true
-            self.passwordTextField = textField
-        }
-        alertController.addAction(UIAlertAction(title: "OK", style: .default) { [unowned self] _ in
-            self.password = self.passwordTextField?.text
-            if let semaphore = self.semaphore {
-                semaphore.signal()
+    @IBAction func writeJsonFile(_ sender: Any) {
+        let fileString = "config.json"
+        let bundle = Bundle.main
+        if let filePath = bundle.path(forResource: "config", ofType: "json") {
+            let manager = FileManager.default
+            if let data = manager.contents(atPath: filePath) {
+                self.scp
+                    .connect()
+                    .authenticate(self.authenticationChallenge)
+                    .upload(fileString, data:data) { [unowned self] (error) in
+                        if let error = error {
+                            self.scpOutputTextView.text = "Error: \(String(describing: error))"
+                        }
+                }
+            } else {
+                self.scpOutputTextView.text = "Error: can not open file"
             }
-        })
-        self.present(alertController, animated: true, completion: nil)
+            
+        } else {
+            self.scpOutputTextView.text = "Error: file not found"
+        }
     }
-    
+        
+        
+        @IBAction func disconnect(_ sender: Any) {
+            self.scp?.disconnect { [unowned self] in
+                self.navigationController?.popViewController(animated: true)
+            }
+        }
+        
+        func askForPassword(_ challenge: String) {
+            let alertController = UIAlertController(title: "Authetication challenge", message: challenge, preferredStyle: .alert)
+            alertController.addTextField { [unowned self] (textField) in
+                textField.placeholder = challenge
+                textField.isSecureTextEntry = true
+                self.passwordTextField = textField
+            }
+            alertController.addAction(UIAlertAction(title: "OK", style: .default) { [unowned self] _ in
+                self.password = self.passwordTextField?.text
+                if let semaphore = self.semaphore {
+                    semaphore.signal()
+                }
+            })
+            self.present(alertController, animated: true, completion: nil)
+        }
+        
 }
