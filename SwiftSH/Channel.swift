@@ -98,7 +98,7 @@ open class SSHChannel: SSHSession {
             throw SSHError.Channel.alreadyOpen
         }
         
-        self.log.debug("Opening the SCP channel...")
+        self.log.debug("Opening the SCP read channel...")
         
         // Set blocking mode
         self.session.blocking = true
@@ -138,7 +138,7 @@ open class SSHChannel: SSHSession {
             throw SSHError.Channel.alreadyOpen
         }
         
-        self.log.debug("Opening the SCP channel...")
+        self.log.debug("Opening the SCP write channel...")
         
         // Set blocking mode
         self.session.blocking = true

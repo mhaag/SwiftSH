@@ -189,7 +189,7 @@ public class SCPSession: SSHChannel {
         
     }
     
-    
+// MARK: - Upload
     public func upload(_ to: String, data:Data, completion: ((Error?) -> Void)?) {
         self.queue.async(completion: { (error: Error?) in
             if let error = error {
@@ -300,7 +300,8 @@ public class SCPSession: SSHChannel {
         
     }
     
-    
+
+// MARK: - RELEASE VERSION - Implementation with Streams
     
     #if RELEASE_VERSION
     public func download(_ from: String, to path: String) -> Self {
