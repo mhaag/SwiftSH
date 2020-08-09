@@ -75,7 +75,7 @@ class SCPViewController: UIViewController, SSHViewController {
     }
     
     @IBAction func writeJsonFile(_ sender: Any) {
-        let fileString = "/markus/config.json"
+        let fileString = "/home/markus/config.json"
         let bundle = Bundle.main
         if let filePath = bundle.path(forResource: "config", ofType: "json") {
             let manager = FileManager.default

@@ -423,7 +423,7 @@ extension Libssh2 {
             let date = NSDate()
             let time = time_t(date.timeIntervalSince1970)
             self.channel = try libssh2_function(self.session) { session in
-                libssh2_scp_send64(session, path, Int32(fileInfo.st_mode & 0777), Int64(size), time,time)
+                libssh2_scp_send_ex(session, path, Int32(fileInfo.st_mode & 0777), Int(size), 0,0)
             }
         }
 
