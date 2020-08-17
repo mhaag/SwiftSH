@@ -75,26 +75,27 @@ class SCPViewController: UIViewController, SSHViewController {
     }
     
     @IBAction func writeJsonFile(_ sender: Any) {
-        let fileString = "/home/markus/config.json"
-        let bundle = Bundle.main
-        if let filePath = bundle.path(forResource: "config", ofType: "json") {
-            let manager = FileManager.default
-            if let data = manager.contents(atPath: filePath) {
+        let fileString = "config.json"
+        let toPathString = "/Users/markus/"+fileString
+//        let bundle = Bundle.main
+//        if let filePath = bundle.path(forResource: "config", ofType: "json") {
+//            let manager = FileManager.default
+//            if let data = manager.contents(atPath: filePath) {
                 self.scp
                     .connect()
                     .authenticate(self.authenticationChallenge)
-                    .upload(fileString, data:data) { [unowned self] (error) in
+                    .upload(toPathString, fileString) { [unowned self] (error) in
                         if let error = error {
                             self.scpOutputTextView.text = "Error: \(String(describing: error))"
                         }
                 }
-            } else {
-                self.scpOutputTextView.text = "Error: can not open file"
-            }
-            
-        } else {
-            self.scpOutputTextView.text = "Error: file not found"
-        }
+//            } else {
+//                self.scpOutputTextView.text = "Error: can not open file"
+//            }
+//
+//        } else {
+//            self.scpOutputTextView.text = "Error: file not found"
+//        }
     }
         
         

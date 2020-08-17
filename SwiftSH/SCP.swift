@@ -189,8 +189,8 @@ public class SCPSession: SSHChannel {
         
     }
     
-// MARK: - Upload
-    public func upload(_ to: String, data:Data, completion: ((Error?) -> Void)?) {
+    // MARK: - Upload
+    public func upload(_ to: String, _ file:String, completion: ((Error?) -> Void)?) {
         self.queue.async(completion: { (error: Error?) in
             if let error = error {
                 self.close()
@@ -205,7 +205,7 @@ public class SCPSession: SSHChannel {
             
             // open SCP Channel
             do {
-                try self.openScpSend(remotePath: to, size:data.count)
+                try self.openScpSend(remotePath: to, localPath: file)
             } catch let error {
                 self.log.error("Error OpenScpSend \(error)")
             }
@@ -221,49 +221,48 @@ public class SCPSession: SSHChannel {
             //                    return
             //                }
             
-            // Suspend the timer to prevent calling completion two times
-            //                timeoutSource.suspend()
-            //                defer {
-            //                    timeoutSource.resume()
-            //                }
-            
-            // Set non-blocking mode
-            self.session.blocking = true
-            
-            // write the data
-            var socketClosed = true
-            
-            let (error, sendBytes) = self.channel.write(data)
-            print("send bytes: \(sendBytes)")
-            if let error = error {
-                print("\(error)")
-            }
-            socketClosed = false
-            
-            
-            
-            // Check if we can return the response
-            if self.channel.receivedEOF || self.channel.exitStatus() != nil || socketClosed {
-                defer {
-                    self.cancelSources()
-                }
-                
-                if let completion = completion {
-                    //                        let result = self.response
-                    var error: Error?
-                    if let message = self.error {
-                        error = SSHError.Command.execError(String(data: message, encoding: .utf8), message)
-                    }
+            let bundle = Bundle.main
+            let filename = NSString(string: file)
+            if let filePath = bundle.path(forResource: filename.deletingLastPathComponent, ofType: filename.pathExtension) {
+                let manager = FileManager.default
+                if let data = manager.contents(atPath: filePath) {
                     
-                    self.queue.callbackQueue.async {
-                        completion(error)
+                    // Set non-blocking mode
+                    self.session.blocking = true
+                    
+                    // write the data
+                    var socketClosed = true
+                    
+                    let (error, sendBytes) = self.channel.write(data)
+                    print("send bytes: \(sendBytes)")
+                    if let error = error {
+                        print("\(error)")
+                    }
+                    socketClosed = false
+                    
+                    
+                    // Check if we can return the response
+                    if self.channel.receivedEOF || self.channel.exitStatus() != nil || socketClosed {
+                        defer {
+                            self.cancelSources()
+                        }
+                        
+                        if let completion = completion {
+                            //                        let result = self.response
+                            var error: Error?
+                            if let message = self.error {
+                                error = SSHError.Command.execError(String(data: message, encoding: .utf8), message)
+                            }
+                            
+                            self.queue.callbackQueue.async {
+                                completion(error)
+                            }
+                        }
                     }
                 }
+            } else {
+                throw SSHError.badUse
             }
-            //            }
-            //            socketSource.setCancelHandler { [weak self] in
-            //                self?.close()
-            //            }
             
             // Create the timeout handler
             self.timeoutSource = DispatchSource.makeTimerSource(queue: self.queue.queue)
@@ -300,8 +299,8 @@ public class SCPSession: SSHChannel {
         
     }
     
-
-// MARK: - RELEASE VERSION - Implementation with Streams
+    
+    // MARK: - RELEASE VERSION - Implementation with Streams
     
     #if RELEASE_VERSION
     public func download(_ from: String, to path: String) -> Self {

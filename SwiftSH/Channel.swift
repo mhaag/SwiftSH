@@ -125,7 +125,7 @@ open class SSHChannel: SSHSession {
         return count
     }
     
-    internal func openScpSend(remotePath path: String, size:Int) throws  {
+    internal func openScpSend(remotePath path: String, localPath local: String) throws  {
         assert(self.queue.current)
         
         // Check if we are authenticated
@@ -142,7 +142,7 @@ open class SSHChannel: SSHSession {
         
         // Set blocking mode
         self.session.blocking = true
-        try self.channel.openSCPChannelSend(remotePath: path, size: size)
+        try self.channel.openSCPChannelSend(remotePath: path, localPath: local)
         
         do {
             // Set the environment's variables
