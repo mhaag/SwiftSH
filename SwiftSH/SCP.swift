@@ -182,6 +182,12 @@ public class SCPSession: SSHChannel {
             // Set non-blocking mode
             self.session.blocking = false
             
+            if let responseCount = self.response?.count {
+                if (responseCount == fileSize)
+                {
+                    print("File fully loaded")
+                }
+            }
             // Start listening for new data
             timeoutSource.resume()
             socketSource.resume()
@@ -220,49 +226,50 @@ public class SCPSession: SSHChannel {
             //                guard let self = self, let timeoutSource = self.timeoutSource else {
             //                    return
             //                }
+            let fileURL = try FileManager.default
+                .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+                .appendingPathComponent(file)
+            let data =  try Data(contentsOf: fileURL)
             
-            let bundle = Bundle.main
-            let filename = NSString(string: file)
-            if let filePath = bundle.path(forResource: filename.deletingLastPathComponent, ofType: filename.pathExtension) {
-                let manager = FileManager.default
-                if let data = manager.contents(atPath: filePath) {
-                    
-                    // Set non-blocking mode
-                    self.session.blocking = true
-                    
-                    // write the data
-                    var socketClosed = true
-                    
-                    let (error, sendBytes) = self.channel.write(data)
-                    print("send bytes: \(sendBytes)")
-                    if let error = error {
-                        print("\(error)")
+            // Set non-blocking mode
+            self.session.blocking = true
+            
+            // write the data
+            var socketClosed = true
+            
+            let (error, sendBytes) = self.channel.write(data)
+            
+            print("send bytes: \(sendBytes)")
+            if let error = error {
+                print("\(error)")
+            }
+            socketClosed = false
+            
+            
+            // Check if we can return the response
+            if self.channel.receivedEOF || self.channel.exitStatus() != nil || socketClosed {
+                defer {
+                    self.cancelSources()
+                }
+                
+                if let completion = completion {
+                    //                        let result = self.response
+                    var error: Error?
+                    if let message = self.error {
+                        error = SSHError.Command.execError(String(data: message, encoding: .utf8), message)
                     }
-                    socketClosed = false
                     
-                    
-                    // Check if we can return the response
-                    if self.channel.receivedEOF || self.channel.exitStatus() != nil || socketClosed {
-                        defer {
-                            self.cancelSources()
-                        }
-                        
-                        if let completion = completion {
-                            //                        let result = self.response
-                            var error: Error?
-                            if let message = self.error {
-                                error = SSHError.Command.execError(String(data: message, encoding: .utf8), message)
-                            }
-                            
-                            self.queue.callbackQueue.async {
-                                completion(error)
-                            }
-                        }
+                    self.queue.callbackQueue.async {
+                        completion(error)
                     }
                 }
-            } else {
-                throw SSHError.badUse
             }
+            
+            // if filesize was send exit
+            if (sendBytes == data.count) {
+                print("ALL BYTES SENT!!")
+            }
+            
             
             // Create the timeout handler
             self.timeoutSource = DispatchSource.makeTimerSource(queue: self.queue.queue)

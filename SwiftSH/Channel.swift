@@ -134,10 +134,10 @@ open class SSHChannel: SSHSession {
         }
         
         // Check if the channel is already open
-        guard !self.channel.opened else {
-            throw SSHError.Channel.alreadyOpen
-        }
-        
+//        guard !self.channel.opened else {
+//            throw SSHError.Channel.alreadyOpen
+//        }
+//        
         self.log.debug("Opening the SCP write channel...")
         
         // Set blocking mode
